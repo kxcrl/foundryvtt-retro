@@ -1,0 +1,39 @@
+{
+  "id": "foundryvtt-retro",
+  "title": "FoundryVTT Retro",
+  "description": "",
+  "version": "0.0.1",
+  "library": "false",
+  "manifestPlusVersion": "1.2.0",
+  "compatibility": {
+    "minimum": 10,
+    "verified": 10,
+    "maximum": 11
+  },
+  "authors": [
+    {
+      "name": "ipso",
+      "url": "https://ipso.studio"
+    }
+  ],
+  "relationships": {
+    "systems": [],
+    "requires": []
+  },
+  "esmodules": [
+    "scripts/application.js"
+  ],
+  "styles": [
+    "styles/application.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "license": "LICENSE",
+  "readme": "README.md",
+  "media": []
+}
