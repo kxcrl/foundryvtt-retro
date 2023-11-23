@@ -1,1 +1,9 @@
-{}
+{
+  "module": {
+    "title": "Retro"
+  },
+  "config": {
+    "title": "Sprite",
+    "sheet-name": "Sprite Sheet"
+  }
+}
