@@ -1,3 +1,21 @@
+function spriteControls(tilingSprite) {
+  if (game.keyboard.moveKeys.has('up')) {
+    tilingSprite.tilePosition.y = 0;
+  }
+
+  if (game.keyboard.moveKeys.has('right')) {
+    tilingSprite.tilePosition.y = -100;
+  }
+
+  if (game.keyboard.moveKeys.has('down')) {
+    tilingSprite.tilePosition.y = -200;
+  }
+
+  if (game.keyboard.moveKeys.has('left')) {
+    tilingSprite.tilePosition.y = -300;
+  }
+}
+
 function onConfigRender(config, html) {
   // TODO: Use a template to render the config, use the filepicker handleBars helper to select the image
   // let renderedConfig = await renderTemplate('../templates/config.hbs')
@@ -48,10 +66,37 @@ function onConfigRender(config, html) {
   btn.clone(true).insertAfter($('input[name="flags.foundryvtt-retro.sprite-sheet-path"]', html).css({ 'flex-basis': 'unset', 'flex-grow': 1 }));
 };
 
+function onDrawToken(token) {
+  const texture = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
+  const tilingSprite = new PIXI.TilingSprite(texture, 100, 100,);
+
+  if (!token.tokenSprite) {
+    token.tokenSprite = canvas.grid.tokenSprites.addChild(new PIXI.Container());
+  }
+
+  token.tokenSprite.addChild(tilingSprite);
+
+  canvas.app.ticker.add(() => {
+    spriteControls(tilingSprite);
+  });
+};
+
+function onRefreshToken(token) {
+  if ( token.tokenSprite ) {
+    const { x, y } = token.document;
+    token.tokenSprite.position.set(x, y);
+  }
+};
+
 Hooks.once('init', async function() {
 });
 
 Hooks.once('ready', async function() {
 });
 
+Hooks.on('drawGridLayer', gridLayer => {
+	gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
+});
+Hooks.on('drawToken', onDrawToken);
+Hooks.on('refreshToken', onRefreshToken);
 Hooks.on('renderTokenConfig', onConfigRender);
