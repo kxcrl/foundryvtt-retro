@@ -81,6 +81,10 @@ function onDrawToken(token) {
   });
 };
 
+function onDestroyToken(token) {
+  token.tokenSprite.removeChildren();
+};
+
 function onRefreshToken(token) {
   if ( token.tokenSprite ) {
     const { x, y } = token.document;
@@ -98,5 +102,6 @@ Hooks.on('drawGridLayer', gridLayer => {
 	gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
 });
 Hooks.on('drawToken', onDrawToken);
+Hooks.on('destroyToken', onDestroyToken);
 Hooks.on('refreshToken', onRefreshToken);
 Hooks.on('renderTokenConfig', onConfigRender);
