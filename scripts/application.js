@@ -1,18 +1,24 @@
-function spriteControls(tilingSprite) {
+function spriteControls(token) {
+  const tilingSprite = token.tokenSprite.children[0];
+
+  if (!token.controlled) {
+    return;
+  }
+
   if (game.keyboard.moveKeys.has('up')) {
     tilingSprite.tilePosition.y = 0;
   }
 
   if (game.keyboard.moveKeys.has('right')) {
-    tilingSprite.tilePosition.y = -100;
+    tilingSprite.tilePosition.y = -64;
   }
 
   if (game.keyboard.moveKeys.has('down')) {
-    tilingSprite.tilePosition.y = -200;
+    tilingSprite.tilePosition.y = -128;
   }
 
   if (game.keyboard.moveKeys.has('left')) {
-    tilingSprite.tilePosition.y = -300;
+    tilingSprite.tilePosition.y = -192;
   }
 }
 
@@ -68,7 +74,7 @@ function onConfigRender(config, html) {
 
 function onDrawToken(token) {
   const texture = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
-  const tilingSprite = new PIXI.TilingSprite(texture, 100, 100,);
+  const tilingSprite = new PIXI.TilingSprite(texture, 64, 64,);
 
   if (!token.tokenSprite) {
     token.tokenSprite = canvas.grid.tokenSprites.addChild(new PIXI.Container());
@@ -77,7 +83,7 @@ function onDrawToken(token) {
   token.tokenSprite.addChild(tilingSprite);
 
   canvas.app.ticker.add(() => {
-    spriteControls(tilingSprite);
+    spriteControls(token);
   });
 };
 
