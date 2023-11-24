@@ -1,4 +1,44 @@
+const TILE_SIZE = 64;
+
 function spriteControls(token) {
+  if (!token.controlled) { return; }
+
+  const keyUp = game.keyboard.moveKeys.has('up');
+  const keyDown = game.keyboard.moveKeys.has('down');
+  const keyLeft = game.keyboard.moveKeys.has('left');
+  const keyRight = game.keyboard.moveKeys.has('right');
+
+  const downLeft = TILE_SIZE * 0;
+  const downRight = TILE_SIZE * -1;
+  const upLeft = TILE_SIZE * -2;
+  const upRight = TILE_SIZE * -3;
+
+  const tilingSprite = token.tokenSprite.children[0];
+  const facingDirection = tilingSprite.tilePosition.y;
+
+  const isFacingDownLeft = facingDirection == downLeft;
+  const isFacingDownRight = facingDirection == downRight;
+  const isFacingUpLeft = facingDirection == upLeft;
+  const isFacingUpRight = facingDirection == upRight;
+  
+  if (keyUp) {
+    tilingSprite.tilePosition.y = isFacingDownLeft || isFacingUpLeft ? upLeft : upRight;
+  }
+
+  if (keyDown) {
+    tilingSprite.tilePosition.y = isFacingDownLeft || isFacingUpLeft ? downLeft : downRight;
+  }
+
+  if (keyLeft) {
+    tilingSprite.tilePosition.y = isFacingUpLeft || isFacingUpRight ? upLeft : downLeft;
+  }
+
+  if (keyRight) {
+    tilingSprite.tilePosition.y = isFacingUpLeft || isFacingUpRight ? upRight : downRight;
+  }
+}
+
+function topDownControls(token) {
   const tilingSprite = token.tokenSprite.children[0];
 
   if (!token.controlled) {
@@ -6,19 +46,19 @@ function spriteControls(token) {
   }
 
   if (game.keyboard.moveKeys.has('up')) {
-    tilingSprite.tilePosition.y = 0;
+    tilingSprite.tilePosition.y = TILE_SIZE * 0;
   }
 
   if (game.keyboard.moveKeys.has('right')) {
-    tilingSprite.tilePosition.y = -64;
+    tilingSprite.tilePosition.y = TILE_SIZE * -1;
   }
 
   if (game.keyboard.moveKeys.has('down')) {
-    tilingSprite.tilePosition.y = -128;
+    tilingSprite.tilePosition.y = TILE_SIZE * -2;
   }
 
   if (game.keyboard.moveKeys.has('left')) {
-    tilingSprite.tilePosition.y = -192;
+    tilingSprite.tilePosition.y = TILE_SIZE * -3;
   }
 }
 
@@ -74,7 +114,7 @@ function onConfigRender(config, html) {
 
 function onDrawToken(token) {
   const texture = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
-  const tilingSprite = new PIXI.TilingSprite(texture, 64, 64,);
+  const tilingSprite = new PIXI.TilingSprite(texture, TILE_SIZE, TILE_SIZE,);
 
   if (!token.tokenSprite) {
     token.tokenSprite = canvas.grid.tokenSprites.addChild(new PIXI.Container());
