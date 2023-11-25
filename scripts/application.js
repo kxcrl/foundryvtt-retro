@@ -1,5 +1,5 @@
 let FRAME = 0;
-const TILE_SIZE = 64;
+let TILE_SIZE = 64;
 
 function animationTick(token) {
   if (FRAME % 15 !== 0) { return; };
@@ -168,12 +168,13 @@ function onRefreshToken(token) {
   }
 };
 
-Hooks.once('init', async function() {
-});
-
 Hooks.once('ready', async function() {
   onInit();
 });
+
+Hooks.on('canvasReady', async function() {
+  TILE_SIZE = canvas.grid.size;
+})
 
 Hooks.on('drawGridLayer', gridLayer => {
 	gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
