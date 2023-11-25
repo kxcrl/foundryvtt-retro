@@ -137,6 +137,8 @@ function onDrawToken(token) {
 
   if (!spriteSheet) { return; };
 
+  token.document.update({ alpha: 0 }, { animate: false })
+
   const tilingSprite = new PIXI.TilingSprite(spriteSheet, TILE_SIZE, TILE_SIZE,);
 
   if (!token.tokenSprite) {
