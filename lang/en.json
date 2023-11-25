@@ -4,6 +4,7 @@
   },
   "config": {
     "title": "Sprite",
-    "sheet-name": "Sprite Sheet"
+    "sheet-name": "Sprite Sheet",
+    "sprite-height": "Sprite Height (in grid tiles)"
   }
 }

@@ -22,15 +22,17 @@ function animationTick(token) {
 function diagonalSpriteControls(token) {
   if (!token.controlled) { return; }
 
+  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
+
   const keyUp = game.keyboard.moveKeys.has('up');
   const keyDown = game.keyboard.moveKeys.has('down');
   const keyLeft = game.keyboard.moveKeys.has('left');
   const keyRight = game.keyboard.moveKeys.has('right');
 
-  const downLeft = TILE_SIZE * 0;
-  const downRight = TILE_SIZE * -1;
-  const upLeft = TILE_SIZE * -2;
-  const upRight = TILE_SIZE * -3;
+  const downLeft = TILE_SIZE * 0 * spriteHeight;
+  const downRight = TILE_SIZE * -1 * spriteHeight;
+  const upLeft = TILE_SIZE * -2 * spriteHeight;
+  const upRight = TILE_SIZE * -3 * spriteHeight;
 
   const tilingSprite = token.tokenSprite.children[0];
   const facingDirection = tilingSprite.tilePosition.y;
@@ -59,33 +61,40 @@ function diagonalSpriteControls(token) {
 
 function spriteControls(token) {
   const tilingSprite = token.tokenSprite.children[0];
+  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
 
   if (!token.controlled) {
     return;
   }
 
   if (game.keyboard.moveKeys.has('up')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * 0;
+    tilingSprite.tilePosition.y = TILE_SIZE * 0 * spriteHeight;
   }
 
   if (game.keyboard.moveKeys.has('right')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * -1;
+    tilingSprite.tilePosition.y = TILE_SIZE * -1 * spriteHeight;
   }
 
   if (game.keyboard.moveKeys.has('down')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * -2;
+    tilingSprite.tilePosition.y = TILE_SIZE * -2 * spriteHeight;
   }
 
   if (game.keyboard.moveKeys.has('left')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * -3;
+    tilingSprite.tilePosition.y = TILE_SIZE * -3 * spriteHeight;
   }
 }
 
-function onConfigRender(config, html) {
+async function onConfigRender(config, html) {
   // TODO: Use a template to render the config, use the filepicker handleBars helper to select the image
   // let renderedConfig = await renderTemplate('../templates/config.hbs')
 
-  let spriteSheetPath = config.token.getFlag('foundryvtt-retro', 'sprite-sheet-path')
+  let spriteSheetPath = config.token.getFlag('foundryvtt-retro', 'sprite-sheet-path');
+  let spriteHeight = config.token.getFlag('foundryvtt-retro', 'sprite-height');
+
+  if (!spriteHeight) {
+    spriteHeight = 1;
+    await config.token.setFlag('foundryvtt-retro', 'sprite-height', 1);
+  }
 
   config.position.width = 540;
   config.setPosition(config.position);
@@ -119,10 +128,16 @@ function onConfigRender(config, html) {
 
   nav.parent().find('footer').before($(`
   <div class="tab" data-tab="sprite">
-    <div class="form-group">
-      <label>${game.i18n.localize('config.sheet-name')}</label>
-      <div class="form-fields">
-        <input type="text" value="${spriteSheetPath}" name="flags.foundryvtt-retro.sprite-sheet-path" data-target="flags.foundryvtt-retro.sprite-sheet-path">
+    <div>
+      <div class="form-group">
+        <label>${game.i18n.localize('config.sheet-name')}</label>
+        <div class="form-group">
+          <input type="text" value="${spriteSheetPath || "None"}" name="flags.foundryvtt-retro.sprite-sheet-path" data-target="flags.foundryvtt-retro.sprite-sheet-path">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>${game.i18n.localize('config.sprite-height')}</label>
+        <input type="text" value="${spriteHeight}" name="flags.foundryvtt-retro.sprite-height" data-target="flags.foundryvtt-retro.sprite-height">
       </div>
     </div>
   </div>
@@ -132,13 +147,17 @@ function onConfigRender(config, html) {
 };
 
 function onDrawToken(token) {
+  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
   const spriteSheet = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
 
   if (!spriteSheet) { return; };
 
   token.document.update({ alpha: 0 }, { animate: false })
 
-  const tilingSprite = new PIXI.TilingSprite(spriteSheet, TILE_SIZE, TILE_SIZE,);
+  const tilingSprite = new PIXI.TilingSprite(spriteSheet, TILE_SIZE, TILE_SIZE * spriteHeight,);
+
+  // spriteHeight - 1 because a 1x1 tile should have no offset, so start at 0
+  if (spriteHeight > 1) { tilingSprite.localTransform.ty = TILE_SIZE * (spriteHeight - 1) * -1; };
 
   if (!token.tokenSprite) {
     token.tokenSprite = canvas.grid.tokenSprites.addChild(new PIXI.Container());
@@ -146,11 +165,12 @@ function onDrawToken(token) {
 
   token.tokenSprite.addChild(tilingSprite);
 
+
   // There is a callback in PIXI.js that has to fire before we can
   // check the texture height and width. It's next on the stack, so we
   // are just lifting this out of the current function with a tiny timeout.
   setTimeout(() => {
-    if (tilingSprite.texture.height > TILE_SIZE) {
+    if (tilingSprite.texture.height > TILE_SIZE * (spriteHeight - 1)) {
       canvas.app.ticker.add(() => {
         spriteControls(token);
       });
