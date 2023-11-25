@@ -3,7 +3,6 @@ let TILE_SIZE = 64;
 
 function animationTick(token) {
   if (FRAME % 15 !== 0) { return; };
-
   if (!token.tokenSprite.children.length) { return; };
 
   const tilingSprite = token.tokenSprite.children[0];
@@ -147,10 +146,22 @@ function onDrawToken(token) {
 
   token.tokenSprite.addChild(tilingSprite);
 
-  canvas.app.ticker.add(() => {
-    spriteControls(token);
-    animationTick(token);
-  });
+  // There is a callback in PIXI.js that has to fire before we can
+  // check the texture height and width. It's next on the stack, so we
+  // are just lifting this out of the current function with a tiny timeout.
+  setTimeout(() => {
+    if (tilingSprite.texture.height > TILE_SIZE) {
+      canvas.app.ticker.add(() => {
+        spriteControls(token);
+      });
+    }
+
+    if (tilingSprite.texture.width > TILE_SIZE) {
+      canvas.app.ticker.add(() => {
+        animationTick(token);
+      });
+    }
+  }, 10);
 };
 
 function onDestroyToken(token) {
