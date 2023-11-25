@@ -1,6 +1,26 @@
+let FRAME = 0;
 const TILE_SIZE = 64;
 
-function spriteControls(token) {
+function animationTick(token) {
+  if (FRAME % 15 !== 0) { return; };
+
+  if (!token.tokenSprite.children.length) { return; };
+
+  const tilingSprite = token.tokenSprite.children[0];
+
+  // Position is the left edge of the sprite while width is the right edge,
+  // so we need to add 1 to position or subtract 1 from width
+  const currentFrame = 1 + tilingSprite.tilePosition.x / TILE_SIZE;
+  const maxFrame = tilingSprite.texture.width / TILE_SIZE;
+
+  if (currentFrame == maxFrame) {
+    tilingSprite.tilePosition.x = 0;
+  } else {
+    tilingSprite.tilePosition.x += TILE_SIZE;
+  }
+}
+
+function diagonalSpriteControls(token) {
   if (!token.controlled) { return; }
 
   const keyUp = game.keyboard.moveKeys.has('up');
@@ -38,7 +58,7 @@ function spriteControls(token) {
   }
 }
 
-function topDownControls(token) {
+function spriteControls(token) {
   const tilingSprite = token.tokenSprite.children[0];
 
   if (!token.controlled) {
@@ -113,8 +133,11 @@ function onConfigRender(config, html) {
 };
 
 function onDrawToken(token) {
-  const texture = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
-  const tilingSprite = new PIXI.TilingSprite(texture, TILE_SIZE, TILE_SIZE,);
+  const spriteSheet = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
+
+  if (!spriteSheet) { return; };
+
+  const tilingSprite = new PIXI.TilingSprite(spriteSheet, TILE_SIZE, TILE_SIZE,);
 
   if (!token.tokenSprite) {
     token.tokenSprite = canvas.grid.tokenSprites.addChild(new PIXI.Container());
@@ -124,11 +147,16 @@ function onDrawToken(token) {
 
   canvas.app.ticker.add(() => {
     spriteControls(token);
+    animationTick(token);
   });
 };
 
 function onDestroyToken(token) {
   token.tokenSprite.removeChildren();
+};
+
+function onInit() {
+  canvas.app.ticker.add(() => { FRAME += 1; });
 };
 
 function onRefreshToken(token) {
@@ -142,6 +170,7 @@ Hooks.once('init', async function() {
 });
 
 Hooks.once('ready', async function() {
+  onInit();
 });
 
 Hooks.on('drawGridLayer', gridLayer => {
