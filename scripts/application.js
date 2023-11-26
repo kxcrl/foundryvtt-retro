@@ -67,19 +67,19 @@ function spriteControls(token) {
     return;
   }
 
-  if (game.keyboard.moveKeys.has('up')) {
+  if (game.keyboard.moveKeys.has('down')) {
     tilingSprite.tilePosition.y = TILE_SIZE * 0 * spriteHeight;
   }
 
-  if (game.keyboard.moveKeys.has('right')) {
+  if (game.keyboard.moveKeys.has('left')) {
     tilingSprite.tilePosition.y = TILE_SIZE * -1 * spriteHeight;
   }
 
-  if (game.keyboard.moveKeys.has('down')) {
+  if (game.keyboard.moveKeys.has('up')) {
     tilingSprite.tilePosition.y = TILE_SIZE * -2 * spriteHeight;
   }
 
-  if (game.keyboard.moveKeys.has('left')) {
+  if (game.keyboard.moveKeys.has('right')) {
     tilingSprite.tilePosition.y = TILE_SIZE * -3 * spriteHeight;
   }
 }
