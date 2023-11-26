@@ -196,6 +196,8 @@ function onRefreshToken(token) {
   if ( token.tokenSprite ) {
     const { x, y } = token.document;
     token.tokenSprite.position.set(x, y);
+    token.tokenSprite.zIndex = y / TILE_SIZE;
+    token.mesh.zIndex = y / TILE_SIZE;
   }
 };
 
@@ -208,7 +210,8 @@ Hooks.on('canvasReady', async function() {
 })
 
 Hooks.on('drawGridLayer', gridLayer => {
-	gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
+  gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
+  gridLayer.tokenSprites.sortableChildren = true;
 });
 Hooks.on('drawToken', onDrawToken);
 Hooks.on('destroyToken', onDestroyToken);
