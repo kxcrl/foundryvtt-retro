@@ -1,8 +1,19 @@
+// Note: Throughout this module you will see many things multiplied by -1.
+// PIXI.js uses a positive y axis, unlike in CSS where everything has an inverted y value
+// and positive numbers go down the page. In PIXI.js terms, to start at the top of a
+// sprite sheet and go down, we want to move in the negative y direction.
+let DOWN = 0; // First square of the sprite sheet.
+let LEFT = -1; // Second
+let UP = -2; // Third
+let RIGHT = -3; // Fourth
+
 let FRAME = 0;
+let FRAME_RATE = 5;
 let TILE_SIZE = 64;
 
+
 function animationTick(token) {
-  if (FRAME % 15 !== 0) { return; };
+  if (FRAME % FRAME_RATE !== 0) { return; };
   if (!token.tokenSprite.children.length) { return; };
 
   const tilingSprite = token.tokenSprite.children[0];
@@ -19,68 +30,35 @@ function animationTick(token) {
   }
 }
 
-function diagonalSpriteControls(token) {
-  if (!token.controlled) { return; }
-
-  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
-
-  const keyUp = game.keyboard.moveKeys.has('up');
-  const keyDown = game.keyboard.moveKeys.has('down');
-  const keyLeft = game.keyboard.moveKeys.has('left');
-  const keyRight = game.keyboard.moveKeys.has('right');
-
-  const downLeft = TILE_SIZE * 0 * spriteHeight;
-  const downRight = TILE_SIZE * -1 * spriteHeight;
-  const upLeft = TILE_SIZE * -2 * spriteHeight;
-  const upRight = TILE_SIZE * -3 * spriteHeight;
-
-  const tilingSprite = token.tokenSprite.children[0];
-  const facingDirection = tilingSprite.tilePosition.y;
-
-  const isFacingDownLeft = facingDirection == downLeft;
-  const isFacingDownRight = facingDirection == downRight;
-  const isFacingUpLeft = facingDirection == upLeft;
-  const isFacingUpRight = facingDirection == upRight;
-  
-  if (keyUp) {
-    tilingSprite.tilePosition.y = isFacingDownLeft || isFacingUpLeft ? upLeft : upRight;
-  }
-
-  if (keyDown) {
-    tilingSprite.tilePosition.y = isFacingDownLeft || isFacingUpLeft ? downLeft : downRight;
-  }
-
-  if (keyLeft) {
-    tilingSprite.tilePosition.y = isFacingUpLeft || isFacingUpRight ? upLeft : downLeft;
-  }
-
-  if (keyRight) {
-    tilingSprite.tilePosition.y = isFacingUpLeft || isFacingUpRight ? upRight : downRight;
-  }
+function getMoveKey() {
+  if (game.keyboard.moveKeys.has('down')) { return DOWN; };
+  if (game.keyboard.moveKeys.has('left')) { return LEFT; };
+  if (game.keyboard.moveKeys.has('up')) { return UP; };
+  if (game.keyboard.moveKeys.has('right')) { return RIGHT; };
 }
 
-function spriteControls(token) {
+function controlSprite(token, changes) {
+  if (!game.keyboard.moveKeys.size) { return; };
+  if (!token.controlled) { return; };
+
   const tilingSprite = token.tokenSprite.children[0];
   const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
+  const movementOffset = TILE_SIZE * spriteHeight * getMoveKey()
+  let animationOffset = 0;
 
-  if (!token.controlled) {
-    return;
-  }
+  if (changes.x || changes.y) {
+    tilingSprite.tilePosition.x = 0;
+    animationOffset = TILE_SIZE * spriteHeight * -4;
+  };
 
-  if (game.keyboard.moveKeys.has('down')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * 0 * spriteHeight;
-  }
+  tilingSprite.tilePosition.y = movementOffset + animationOffset;
 
-  if (game.keyboard.moveKeys.has('left')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * -1 * spriteHeight;
-  }
-
-  if (game.keyboard.moveKeys.has('up')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * -2 * spriteHeight;
-  }
-
-  if (game.keyboard.moveKeys.has('right')) {
-    tilingSprite.tilePosition.y = TILE_SIZE * -3 * spriteHeight;
+  // 250 is the hardcoded amount of time in Foundry that movement animation occurs for
+  // Shortly after that, stop the walking animation
+  if (animationOffset) {
+    setTimeout(() => {
+      tilingSprite.tilePosition.y = movementOffset;
+    }, 300);
   }
 }
 
@@ -170,10 +148,8 @@ function onDrawToken(token) {
   // check the texture height and width. It's next on the stack, so we
   // are just lifting this out of the current function with a tiny timeout.
   setTimeout(() => {
-    if (tilingSprite.texture.height > TILE_SIZE * (spriteHeight - 1)) {
-      canvas.app.ticker.add(() => {
-        spriteControls(token);
-      });
+    if (tilingSprite.texture.height > TILE_SIZE * (spriteHeight - 1) * 4) {
+      token.document.setFlag('foundryvtt-retro', 'has-walking-animation', 'true')
     }
 
     if (tilingSprite.texture.width > TILE_SIZE) {
@@ -190,6 +166,15 @@ function onDestroyToken(token) {
 
 function onInit() {
   canvas.app.ticker.add(() => { FRAME += 1; });
+};
+
+function onPreUpdateToken(token, changes, options, userId) {
+  // The Token that is sent here is a SimpleTokenDocument, not a SimpleToken.
+  // This gets the SimpleToken, which is what every other method uses and returns.
+  token = token.object;
+  if (!token.tokenSprite) { return; };
+
+  controlSprite(token, changes)
 };
 
 function onRefreshToken(token) {
@@ -217,3 +202,4 @@ Hooks.on('drawToken', onDrawToken);
 Hooks.on('destroyToken', onDestroyToken);
 Hooks.on('refreshToken', onRefreshToken);
 Hooks.on('renderTokenConfig', onConfigRender);
+Hooks.on('preUpdateToken', onPreUpdateToken);
