@@ -2,7 +2,7 @@
 
 A module for recreating classic adventure games within FoundryVTT using the systems pioneered by Rogue and the early roguelikes, at the graphical level of 8-bit consoles.
 
-![FoundryVTT_Retro](https://github.com/kxcrl/foundryvtt-retro/assets/2732584/0f7315ec-f8c2-4c4c-8545-831612aef36f)
+![FoundryVTT_Retro](https://github.com/kxcrl/foundryvtt-retro/assets/2732584/fe971bbf-3db5-4770-a626-949f194a0843)
 
 An animation system based on the original NES with support for:
 - Sprite sheets
@@ -26,7 +26,7 @@ An animation system based on the original NES with support for:
 ### Tips and Resources
 
 - Kenney has many excellent sprite sheets that are available for free.
-  - Check out the [1-bit Pack](https://www.kenney.nl/assets/1-bit-pack) or the [Micro Roguelike](https://www.kenney.nl/assets/micro-roguelike)
+  - Check out the [1-bit Pack](https://www.kenney.nl/assets/1-bit-pack) or the [Micro Roguelike Pack](https://www.kenney.nl/assets/micro-roguelike)
 - Itch.io is easy to search and has many tilesets and sprite sheets from creators around the world, along with an excellent tagging system.
   - Try the [1-bit tag](https://itch.io/game-assets/tag-1-bit)
   - Or the [tileset tag](https://itch.io/game-assets/tag-tileset)
