@@ -1,6 +1,6 @@
 ### FoundryVTT Retro
 
-A module for recreating classic adventure games within FoundryVTT using the systems pioneered by Rogue and the early roguelikes, at the graphical level of 8-bit consoles.
+A module for recreating classic adventure games within FoundryVTT using the systems pioneered by Rogue and the early roguelikes, at the graphical level of old consoles.
 
 ![FoundryVTT_Retro](https://github.com/kxcrl/foundryvtt-retro/assets/2732584/fe971bbf-3db5-4770-a626-949f194a0843)
 
@@ -16,7 +16,7 @@ An animation system based on the original NES with support for:
 - Your sprite sheet must be based on a grid that matches your grid settings in FoundryVTT.
   - 64px is highly recommended as it supports the widest range of sprites that are available, but any size is technically possible.
   - It is also recommended to use sprites with a transparent background
-- Sprites that face different directions must be placed along the y axis in clockwise order: Up, Right, Down, Left
+- Sprites that face different directions must be placed along the y axis in clockwise order: Down, Left, Up, Right
   - If a sprite sheet only has one grid square on the y axis, movement controls will be ignored and it will be rendered as is.
 - Add any animation frames as grid squares along the x axis and they will be animated automatically.
   - Currently, only idle animations are supported. Movement animations coming soon!
