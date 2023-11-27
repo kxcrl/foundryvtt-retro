@@ -168,6 +168,13 @@ function onInit() {
   canvas.app.ticker.add(() => { FRAME += 1; });
 };
 
+function onCanvasReady() {
+  TILE_SIZE = canvas.grid.size;
+
+  game.scene.active.tokens.forEach(onDrawToken);
+  game.scene.active.tokens.forEach(onRefreshToken);
+};
+
 function onPreUpdateToken(token, changes, options, userId) {
   // The Token that is sent here is a SimpleTokenDocument, not a SimpleToken.
   // This gets the SimpleToken, which is what every other method uses and returns.
@@ -186,13 +193,8 @@ function onRefreshToken(token) {
   }
 };
 
-Hooks.once('ready', async function() {
-  onInit();
-});
-
-Hooks.on('canvasReady', async function() {
-  TILE_SIZE = canvas.grid.size;
-})
+Hooks.once('ready', onInit);
+Hooks.once('canvasReady', onCanvasReady);
 
 Hooks.on('drawGridLayer', gridLayer => {
   gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
