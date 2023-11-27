@@ -20,11 +20,11 @@ function animationTick(token) {
 
   // Position is the left edge of the sprite while width is the right edge,
   // so we need to add 1 to position or subtract 1 from width
-  const currentAnimation = token.document.getFlag('foundryvtt-retro', 'currentAnimation')
-  const animationFrameFlag = "sprite-" + currentAnimation + "-frames";
+  const currentAnimation = token.animFlags['current-animation'];
+  const currentAnimationFrameFlag = "sprite-" + currentAnimation + "-frames";
 
   const defaultMaxFrame = tilingSprite.texture.width / TILE_SIZE;
-  const maxFrame = token.document.getFlag('foundryvtt-retro', animationFrameFlag);
+  const maxFrame = token.document.getFlag('foundryvtt-retro', currentAnimationFrameFlag);
   const currentFrame = 1 + tilingSprite.tilePosition.x / TILE_SIZE;
 
   if (currentFrame == maxFrame || currentFrame == defaultMaxFrame) {
@@ -45,27 +45,31 @@ function controlSprite(token, changes) {
   if (!game.keyboard.moveKeys.size) { return; };
   if (!token.controlled) { return; };
 
-  const tilingSprite = token.tokenSprite.children[0];
   const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
-  const movementOffset = TILE_SIZE * spriteHeight * getMoveKey()
-  let animationOffset = 0;
 
-  if (changes.x || changes.y) {
+  token.animFlags['idle-offset'] = TILE_SIZE * spriteHeight * getMoveKey();
+  token.animFlags['walk-offset'] = TILE_SIZE * spriteHeight * -4;
+
+  if (changes.x) { token.animFlags['destination-x'] = changes.x; };
+  if (changes.y) { token.animFlags['destination-y'] = changes.y; };
+  if (token.animFlags['has-walk-cycle']) { animateWalkCycle(token) };
+}
+
+function animateWalkCycle(token) {
+  const destinationX = token.animFlags['destination-x'];
+  const destinationY = token.animFlags['destination-y'];
+  const idleOffset = token.animFlags['idle-offset'];
+  const walkOffset = token.animFlags['walk-offset'];
+  const tilingSprite = token.tokenSprite.children[0];
+
+  if (token.position.x === destinationX && token.position.y === destinationY) {
+    token.animFlags['current-animation'] = 'idle';
     tilingSprite.tilePosition.x = 0;
-    animationOffset = TILE_SIZE * spriteHeight * -4;
-    token.document.flags['foundryvtt-retro']['currentAnimation'] = 'walk';
-  };
-
-  tilingSprite.tilePosition.y = movementOffset + animationOffset;
-
-  // 250 is the hardcoded amount of time in Foundry that movement animation occurs for
-  // Shortly after that, stop the walking animation
-  if (animationOffset) {
-    setTimeout(() => {
-      tilingSprite.tilePosition.y = movementOffset;
-      token.document.flags['foundryvtt-retro']['currentAnimation'] = 'idle';
-      tilingSprite.tilePosition.x = 0;
-    }, 300);
+    tilingSprite.tilePosition.y = idleOffset;
+  } else {
+    token.animFlags['current-animation'] = 'walk';
+    tilingSprite.tilePosition.y = idleOffset + walkOffset;
+    return setTimeout(animateWalkCycle, 250, token);
   }
 }
 
@@ -87,14 +91,9 @@ async function onConfigRender(config, html) {
   const prototypeToken = config.token;
 
   let spriteSheetPath = prototypeToken.getFlag('foundryvtt-retro', 'sprite-sheet-path');
-  let spriteHeight = prototypeToken.getFlag('foundryvtt-retro', 'sprite-height');
+  let spriteHeight = prototypeToken.getFlag('foundryvtt-retro', 'sprite-height') || 1;
   let spriteIdleFrames = prototypeToken.getFlag('foundryvtt-retro', 'sprite-idle-frames') || 0;
   let spriteWalkFrames = prototypeToken.getFlag('foundryvtt-retro', 'sprite-walk-frames') || 0;
-
-  if (!spriteHeight) {
-    spriteHeight = 1;
-    await prototypeToken.setFlag('foundryvtt-retro', 'sprite-height', 1);
-  }
 
   config.position.width = 540;
   config.setPosition(config.position);
@@ -168,19 +167,34 @@ function setupAnimation(token) {
     return setTimeout(setupAnimation, 100, token);
   }
 
-  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
+  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height');
 
-  token.document.flags['foundryvtt-retro']['currentAnimation'] = 'idle';
+  if (!token.animFlags) {
+    token.animFlags = {
+      'current-animation': 'idle',
+      'destination-x': tilingSprite.position.x,
+      'destination-y': tilingSprite.position.y,
+      'has-walk-cycle': false,
+      'idle-offset': 0,
+      'walk-offset': 0
+    }
+  }
 
   if (tilingSprite.texture.width > TILE_SIZE) {
     canvas.app.ticker.add(() => {
       animationTick(token);
     });
+  } else {
+    return;
+  }
+
+  if (tilingSprite.texture.height > TILE_SIZE * spriteHeight * 4) {
+    token.animFlags['has-walk-cycle'] = true;
   }
 }
 
 function onDrawToken(token) {
-  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
+  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height');
   const spriteSheet = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
 
   if (!spriteSheet) { return; };
