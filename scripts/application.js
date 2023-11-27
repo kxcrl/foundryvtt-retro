@@ -20,10 +20,14 @@ function animationTick(token) {
 
   // Position is the left edge of the sprite while width is the right edge,
   // so we need to add 1 to position or subtract 1 from width
-  const currentFrame = 1 + tilingSprite.tilePosition.x / TILE_SIZE;
-  const maxFrame = tilingSprite.texture.width / TILE_SIZE;
+  const currentAnimation = token.document.getFlag('foundryvtt-retro', 'currentAnimation')
+  const animationFrameFlag = "sprite-" + currentAnimation + "-frames";
 
-  if (currentFrame == maxFrame) {
+  const defaultMaxFrame = tilingSprite.texture.width / TILE_SIZE;
+  const maxFrame = token.document.getFlag('foundryvtt-retro', animationFrameFlag);
+  const currentFrame = 1 + tilingSprite.tilePosition.x / TILE_SIZE;
+
+  if (currentFrame == maxFrame || currentFrame == defaultMaxFrame) {
     tilingSprite.tilePosition.x = 0;
   } else {
     tilingSprite.tilePosition.x += TILE_SIZE;
@@ -49,6 +53,7 @@ function controlSprite(token, changes) {
   if (changes.x || changes.y) {
     tilingSprite.tilePosition.x = 0;
     animationOffset = TILE_SIZE * spriteHeight * -4;
+    token.document.flags['foundryvtt-retro']['currentAnimation'] = 'walk';
   };
 
   tilingSprite.tilePosition.y = movementOffset + animationOffset;
@@ -58,20 +63,37 @@ function controlSprite(token, changes) {
   if (animationOffset) {
     setTimeout(() => {
       tilingSprite.tilePosition.y = movementOffset;
+      token.document.flags['foundryvtt-retro']['currentAnimation'] = 'idle';
+      tilingSprite.tilePosition.x = 0;
     }, 300);
   }
 }
 
-async function onConfigRender(config, html) {
-  // TODO: Use a template to render the config, use the filepicker handleBars helper to select the image
-  // let renderedConfig = await renderTemplate('../templates/config.hbs')
+function getImageData(url) {
+  return new Promise((resolve, reject) => {
+    let img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject();
+    img.src = url;
+  });
+}
 
-  let spriteSheetPath = config.token.getFlag('foundryvtt-retro', 'sprite-sheet-path');
-  let spriteHeight = config.token.getFlag('foundryvtt-retro', 'sprite-height');
+async function calculateMaxFrame(spriteSheetPath) {
+  let image = await getImageData(spriteSheetPath);
+  return image.width / TILE_SIZE;
+}
+
+async function onConfigRender(config, html) {
+  const prototypeToken = config.token;
+
+  let spriteSheetPath = prototypeToken.getFlag('foundryvtt-retro', 'sprite-sheet-path');
+  let spriteHeight = prototypeToken.getFlag('foundryvtt-retro', 'sprite-height');
+  let spriteIdleFrames = prototypeToken.getFlag('foundryvtt-retro', 'sprite-idle-frames') || 0;
+  let spriteWalkFrames = prototypeToken.getFlag('foundryvtt-retro', 'sprite-walk-frames') || 0;
 
   if (!spriteHeight) {
     spriteHeight = 1;
-    await config.token.setFlag('foundryvtt-retro', 'sprite-height', 1);
+    await prototypeToken.setFlag('foundryvtt-retro', 'sprite-height', 1);
   }
 
   config.position.width = 540;
@@ -79,23 +101,28 @@ async function onConfigRender(config, html) {
 
   const nav = html.find('nav.sheet-tabs.tabs[data-group="main"]');
   let btn = $('<button>')
-      .addClass('file-picker')
-      .attr('type', 'button')
-      .attr('data-type', "imagevideo")
-      .attr('data-target', "img")
-      .attr('title', "Browse Files")
-      .attr('tabindex', "-1")
-      .html('<i class="fas fa-file-import fa-fw"></i>')
-      .click(function (event) {
-          const fp = new FilePicker({
-              type: "imagevideo",
-              current: $(event.currentTarget).prev().val(),
-              callback: path => {
-                  $(event.currentTarget).prev().val(path);
-              }
-          });
-          return fp.browse();
+    .addClass('file-picker')
+    .attr('type', 'button')
+    .attr('data-type', "imagevideo")
+    .attr('data-target', "img")
+    .attr('title', "Browse Files")
+    .attr('tabindex', "-1")
+    .html('<i class="fas fa-file-import fa-fw"></i>')
+    .click((event) => {
+      const fp = new FilePicker({
+        type: "imagevideo",
+        current: $(event.currentTarget).prev().val(),
+        callback: async function(spriteSheetPath) {
+          $(event.currentTarget).prev().val(spriteSheetPath);
+
+          let maxFrame = await calculateMaxFrame(spriteSheetPath);
+
+          document.querySelector("input[name='flags.foundryvtt-retro.sprite-idle-frames']").value = maxFrame;
+          document.querySelector("input[name='flags.foundryvtt-retro.sprite-walk-frames']").value = maxFrame;
+        }
       });
+      return fp.browse();
+    });
 
   nav.append($(`
     <a class="item" data-tab="sprite">
@@ -117,6 +144,14 @@ async function onConfigRender(config, html) {
         <label>${game.i18n.localize('config.sprite-height')}</label>
         <input type="text" value="${spriteHeight}" name="flags.foundryvtt-retro.sprite-height" data-target="flags.foundryvtt-retro.sprite-height">
       </div>
+      <div class="form-group">
+        <label>${game.i18n.localize('config.sprite-idle-frames')}</label>
+        <input type="text" value="${spriteIdleFrames}" name="flags.foundryvtt-retro.sprite-idle-frames" data-target="flags.foundryvtt-retro.sprite-idle-frames">
+      </div>
+      <div class="form-group">
+        <label>${game.i18n.localize('config.sprite-walk-frames')}</label>
+        <input type="text" value="${spriteWalkFrames}" name="flags.foundryvtt-retro.sprite-walk-frames" data-target="flags.foundryvtt-retro.sprite-walk-frames">
+      </div>
     </div>
   </div>
   `));
@@ -135,9 +170,8 @@ function setupAnimation(token) {
 
   const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
 
-  if (tilingSprite.texture.height > TILE_SIZE * (spriteHeight - 1) * 4) {
-    token.document.setFlag('foundryvtt-retro', 'has-walking-animation', 'true')
-  }
+  token.document.flags['foundryvtt-retro']['currentAnimation'] = 'idle';
+
   if (tilingSprite.texture.width > TILE_SIZE) {
     canvas.app.ticker.add(() => {
       animationTick(token);
@@ -198,9 +232,8 @@ function onRefreshToken(token) {
 };
 
 Hooks.once('ready', onInit);
-Hooks.once('canvasReady', onCanvasReady);
-
-Hooks.on('drawGridLayer', gridLayer => {
+Hooks.on('canvasReady', onCanvasReady);
+Hooks.on('drawGridLayer', (gridLayer) => {
   gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
   gridLayer.tokenSprites.sortableChildren = true;
 });
