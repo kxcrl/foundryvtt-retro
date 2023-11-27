@@ -124,6 +124,27 @@ async function onConfigRender(config, html) {
   btn.clone(true).insertAfter($('input[name="flags.foundryvtt-retro.sprite-sheet-path"]', html).css({ 'flex-basis': 'unset', 'flex-grow': 1 }));
 };
 
+function setupAnimation(token) {
+  const tilingSprite = token.tokenSprite.children[0];
+
+  // PIXI.js sets a 1px empty texture by default to avoid undefined errors.
+  // We need to wait for our real texture to load.
+  if (tilingSprite.texture.width == 1 && tilingSprite.texture.height == 1) {
+    return setTimeout(setupAnimation, 100, token);
+  }
+
+  const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
+
+  if (tilingSprite.texture.height > TILE_SIZE * (spriteHeight - 1) * 4) {
+    token.document.setFlag('foundryvtt-retro', 'has-walking-animation', 'true')
+  }
+  if (tilingSprite.texture.width > TILE_SIZE) {
+    canvas.app.ticker.add(() => {
+      animationTick(token);
+    });
+  }
+}
+
 function onDrawToken(token) {
   const spriteHeight = token.document.getFlag('foundryvtt-retro', 'sprite-height') || 1;
   const spriteSheet = PIXI.Texture.from(token.document.getFlag('foundryvtt-retro', 'sprite-sheet-path'));
@@ -143,21 +164,7 @@ function onDrawToken(token) {
 
   token.tokenSprite.addChild(tilingSprite);
 
-
-  // There is a callback in PIXI.js that has to fire before we can
-  // check the texture height and width. It's next on the stack, so we
-  // are just lifting this out of the current function with a tiny timeout.
-  setTimeout(() => {
-    if (tilingSprite.texture.height > TILE_SIZE * (spriteHeight - 1) * 4) {
-      token.document.setFlag('foundryvtt-retro', 'has-walking-animation', 'true')
-    }
-
-    if (tilingSprite.texture.width > TILE_SIZE) {
-      canvas.app.ticker.add(() => {
-        animationTick(token);
-      });
-    }
-  }, 10);
+  setupAnimation(token);
 };
 
 function onDestroyToken(token) {
@@ -166,6 +173,10 @@ function onDestroyToken(token) {
 
 function onInit() {
   canvas.app.ticker.add(() => { FRAME += 1; });
+};
+
+function onCanvasReady() {
+  TILE_SIZE = canvas.grid.size;
 };
 
 function onPreUpdateToken(token, changes, options, userId) {
@@ -186,13 +197,8 @@ function onRefreshToken(token) {
   }
 };
 
-Hooks.once('ready', async function() {
-  onInit();
-});
-
-Hooks.on('canvasReady', async function() {
-  TILE_SIZE = canvas.grid.size;
-})
+Hooks.once('ready', onInit);
+Hooks.once('canvasReady', onCanvasReady);
 
 Hooks.on('drawGridLayer', gridLayer => {
   gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
