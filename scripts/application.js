@@ -199,6 +199,11 @@ function onDrawToken(token) {
 
   if (!spriteSheet) { return; };
 
+  if (!canvas.tokens.tokenSprites) {
+    canvas.tokens.tokenSprites = canvas.tokens.addChildAt(new PIXI.Container(), 2);
+    canvas.tokens.tokenSprites.sortableChildren = true;
+  }
+
   token.document.update({ alpha: 0 }, { animate: false })
 
   const tilingSprite = new PIXI.TilingSprite(spriteSheet, TILE_SIZE, TILE_SIZE * spriteHeight,);
@@ -207,7 +212,7 @@ function onDrawToken(token) {
   if (spriteHeight > 1) { tilingSprite.localTransform.ty = TILE_SIZE * (spriteHeight - 1) * -1; };
 
   if (!token.tokenSprite) {
-    token.tokenSprite = canvas.grid.tokenSprites.addChild(new PIXI.Container());
+    token.tokenSprite = canvas.tokens.tokenSprites.addChild(new PIXI.Container());
   }
 
   token.tokenSprite.addChild(tilingSprite);
@@ -247,10 +252,6 @@ function onRefreshToken(token) {
 
 Hooks.once('ready', onInit);
 Hooks.on('canvasReady', onCanvasReady);
-Hooks.on('drawGridLayer', (gridLayer) => {
-  gridLayer.tokenSprites = gridLayer.addChildAt(new PIXI.Container(), gridLayer.getChildIndex(gridLayer.borders));
-  gridLayer.tokenSprites.sortableChildren = true;
-});
 Hooks.on('drawToken', onDrawToken);
 Hooks.on('destroyToken', onDestroyToken);
 Hooks.on('refreshToken', onRefreshToken);
